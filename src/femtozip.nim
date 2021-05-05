@@ -1,3 +1,9 @@
+## This module implements a wrapper for the femtozip shared header compression
+## library. In has a low-level wrapper for just accessing the C versions (with
+## a little added type safety). And a high-level wrapper to make it more
+## ergonomic to use with Nim.
+##
+
 #{.passL: "-lfzip -lz".}
 #type
 #  GetCallback = proc (decIndex: cint, docLen: ptr cint, userData: pointer): cstring {.cdecl.}
