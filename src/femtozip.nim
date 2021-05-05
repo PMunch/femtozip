@@ -38,15 +38,20 @@ type
     release(cstring, ptr m)
     m.len is int
 
-proc loadModel*(path: string): Model = fzLoadModel(path.cstring)
+proc loadModel*(path: string): Model =
+  ## Load a model from a path
+  fzLoadModel(path.cstring)
 
 proc save*(model: Model, path: string) =
+  ## Save a generated model to a file
   if fzSaveModel(model, path.cstring) != 0: raise new FZipException
 
 proc buildModel*(documents: openarray[string]): Model =
+  ## Build a model based on a set of documents
   {.push checks: off.}
   result = fzBuildModel(documents.len.cint,
-    (proc (docIndex: cint, docLen: ptr cint, userData: ptr typeof(documents)): cstring {.cdecl.} =
+    (proc (docIndex: cint, docLen: ptr cint,
+           userData: ptr typeof(documents)): cstring {.cdecl.} =
       result = userData[docIndex]
       docLen[] = result.len.cint),
     (proc (buf: cstring, userData: ptr typeof(documents)) {.cdecl.} = discard),
@@ -54,23 +59,34 @@ proc buildModel*(documents: openarray[string]): Model =
   {.pop.}
 
 proc buildModel*(documents: Modelable): Model =
+  ## This doesn't work
   fzBuildModel(documents.len.cint,
     get[typeof(documents)],
     release[typeof(documents)],
     documents.unsafeAddr)
 
-proc release*(model: Model) = fzReleaseModel(model)
+proc release*(model: Model) =
+  ## Release the model (TODO: Implement this as a destructor)
+  fzReleaseModel(model)
 
 proc compress*(source: string, model: Model, startSize = source.len): string =
+  ## Compress the source string by using the model, returns the compressed data
+  ## as a string. This uses an internal buffer that might have to be resized
+  ## during compression, you can use startSize to change the initial size of
+  ## this buffer.
   result = newString(startSize)
   while true:
-    let size = fzCompress(model, source.cstring, source.len.cint, result.cstring, result.len.cint)
+    let size = fzCompress(model, source.cstring, source.len.cint,
+                                 result.cstring, result.len.cint)
     if size > 0:
       result.setLen(size)
       break
     result.setLen(-size)
 
-proc decompress*(source: string, model: Model, startSize = source.len*2): string =
+proc decompress*(source: string, model: Model, startSize = source.len*3): string =
+  ## Decompresses the source string by using the model. Similar to how compress
+  ## has an internal buffer this procedure does as well. If you know the size
+  ## of the initial data you can use that to ensure the buffer won't resize.
   result = newString(startSize)
   while true:
     let size = fzDecompress(model, source.cstring, source.len.cint, result.cstring, result.len.cint)
