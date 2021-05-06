@@ -22,10 +22,10 @@
 
 {.passL: "-lfzip -lz".}
 type
-  GetCallback[T] = proc (docIndex: cint, docLen: ptr cint, userData: ptr T): cstring {.cdecl.}
-  ReleaseCallback[T] = proc (buf: cstring, userData: ptr T) {.cdecl.}
-  DestWriter[T] = proc (buf: cstring, length: csizet, arg: ptr T): cint {.cdecl.}
-  Model = distinct pointer
+  GetCallback*[T] = proc (docIndex: cint, docLen: ptr cint, userData: ptr T): cstring {.cdecl.}
+  ReleaseCallback*[T] = proc (buf: cstring, userData: ptr T) {.cdecl.}
+  DestWriter*[T] = proc (buf: cstring, length: csizet, arg: ptr T): cint {.cdecl.}
+  Model* = distinct pointer
 {.push cdecl, header: "<femtozip.h>".}
 proc fzLoadModel*(path: cstring): Model {.importc: "fz_load_model".}
 proc fzSaveModel*(model: Model, path: cstring): cint {.importc: "fz_save_model".}
@@ -38,7 +38,7 @@ proc fzDecompressWriter*[T](model: Model, source: cstring, sourceLen: csizet, de
 {.pop.}
 
 type
-  FZipException = object of CatchableError
+  FZipException* = object of CatchableError
   Modelable = concept m
     get(cint, ptr cint, ptr m) is cstring
     release(cstring, ptr m)
@@ -64,7 +64,7 @@ proc buildModel*(documents: openarray[string]): Model =
     documents.unsafeAddr)
   {.pop.}
 
-proc buildModel*(documents: Modelable): Model =
+proc buildModel(documents: Modelable): Model =
   ## This doesn't work
   fzBuildModel(documents.len.cint,
     get[typeof(documents)],
